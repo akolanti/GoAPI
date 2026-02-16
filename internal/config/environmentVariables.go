@@ -43,7 +43,7 @@ const (
 	//vectorDB
 	QdrantConnectionTimeout = 30 * time.Second
 	QdrantHost              = ""
-	QdrantPort              = 6333             //http
+	QdrantPort              = 6333 //http
 	QdrantGrpcPort          = 6334
 	QdrantUseTLS            = false            //set for https
 	QdrantPoolSize          = 1                //2-5 is preferred for prod according to documentation

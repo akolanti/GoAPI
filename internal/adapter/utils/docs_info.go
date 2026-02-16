@@ -23,3 +23,10 @@ package utils
 
 //swagger init
 //swag init -g cmd/api/main.go --parseDependency --parseInternal --dir ./ --output ./cmd/api/docs
+
+// docker compose
+//docker-compose up --build
+
+//docker-compose up
+
+//docker-compose down

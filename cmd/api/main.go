@@ -78,7 +78,7 @@ func main() {
 	}
 	service := job.InitJobService(serviceConfig)
 
-	vectorDB := qdrantDB.GetQuadrantClient(serviceContext, config.QdrantHost, config.QdrantGrpcPort)
+	vectorDB := qdrantDB.GetQuadrantClient(serviceContext)
 	embeddingService := googleEmbedding.GetGoogleEmbeddingClient(serviceContext, config.GoogleEmbeddingModel, config.GoogleEmbeddingAPIKey)
 	llmProvider := gemini.GetGeminiClient(serviceContext, config.GoogleEmbeddingAPIKey, config.GeminiModelName)
 

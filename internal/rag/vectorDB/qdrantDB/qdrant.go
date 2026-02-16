@@ -4,6 +4,8 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"os"
+	"strconv"
 	"sync"
 
 	"github.com/akolanti/GoAPI/internal/config"
@@ -22,11 +24,11 @@ type ClientHolder struct {
 	QObj *qdrant.Client
 }
 
-func GetQuadrantClient(ctx context.Context, host string, port int) *ClientHolder {
+func GetQuadrantClient(ctx context.Context) *ClientHolder {
 
 	once.Do(func() {
 		logger = logger_i.NewLogger("Qdrant")
-		res := newClient(host, port)
+		res := newClient()
 		if res != nil {
 			quadrantInstance = res
 			initCacheCollection(ctx, quadrantInstance)
@@ -42,7 +44,15 @@ func GetQuadrantClient(ctx context.Context, host string, port int) *ClientHolder
 	}
 }
 
-func newClient(host string, port int) *qdrant.Client {
+func newClient() *qdrant.Client {
+
+	host := os.Getenv("QDRANT_HOST")
+	port, er := strconv.Atoi(os.Getenv("QDRANT_PORT"))
+
+	if host == "" || er != nil {
+		host = config.QdrantHost
+		port = config.QdrantGrpcPort
+	}
 
 	client, err := qdrant.NewClient(&qdrant.Config{
 		Host:     host,

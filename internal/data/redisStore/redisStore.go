@@ -2,6 +2,7 @@ package redisStore
 
 import (
 	"context"
+	"os"
 	"sync"
 	"time"
 
@@ -63,8 +64,12 @@ func closeRedisStores(ctx context.Context) {
 }
 
 func createNewStore(ctx context.Context, dbType int) *Store {
+	addr := os.Getenv("REDIS_ADDR")
+	if addr == "" {
+		addr = config.RedisAddr
+	}
 	newClient := redis.NewClient(&redis.Options{
-		Addr:                  config.RedisAddr,
+		Addr:                  addr,
 		Password:              config.RedisPassword,
 		DB:                    dbType,
 		ContextTimeoutEnabled: true,
