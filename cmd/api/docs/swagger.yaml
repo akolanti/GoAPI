@@ -1,0 +1,170 @@
+basePath: /
+definitions:
+  github_com_akolanti_GoAPI_internal_api.ChatRequest:
+    properties:
+      chatID:
+        type: string
+      message:
+        type: string
+    required:
+    - message
+    type: object
+  github_com_akolanti_GoAPI_internal_api.InitJobResponse:
+    properties:
+      id:
+        type: string
+      status_url:
+        type: string
+    type: object
+  github_com_akolanti_GoAPI_internal_api.JobOutgoingError:
+    properties:
+      can_retry:
+        example: false
+        type: boolean
+      code:
+        example: 400
+        type: integer
+      message:
+        example: Job not found
+        type: string
+    type: object
+  github_com_akolanti_GoAPI_internal_api.JobResponse:
+    properties:
+      chat_id:
+        example: chat_550
+        type: string
+      end_time:
+        type: string
+      error:
+        $ref: '#/definitions/github_com_akolanti_GoAPI_internal_api.JobOutgoingError'
+      id:
+        example: job_cz109
+        type: string
+      result:
+        $ref: '#/definitions/github_com_akolanti_GoAPI_internal_api.Result'
+      start_time:
+        type: string
+    type: object
+  github_com_akolanti_GoAPI_internal_api.RAGResponse:
+    properties:
+      answer:
+        type: string
+      question:
+        type: string
+      sources:
+        items:
+          type: string
+        type: array
+    type: object
+  github_com_akolanti_GoAPI_internal_api.Result:
+    properties:
+      rag_response:
+        $ref: '#/definitions/github_com_akolanti_GoAPI_internal_api.RAGResponse'
+      status:
+        type: string
+    type: object
+host: localhost:3000
+info:
+  contact:
+    name: me lol
+  description: This API handles asynchronous chat RAG
+  license:
+    name: Apache 2.0
+    url: http://www.apache.org/licenses/LICENSE-2.0.html
+  termsOfService: http://swagger.io/terms/
+  title: Chat RAG API
+  version: "1.0"
+paths:
+  /chat:
+    post:
+      consumes:
+      - application/json
+      description: Accepts a message, initializes a background processing job, and
+        returns a job ID to track status.
+      parameters:
+      - description: Chat Message and optional Chat ID
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/github_com_akolanti_GoAPI_internal_api.ChatRequest'
+      produces:
+      - application/json
+      responses:
+        "202":
+          description: Job successfully created
+          schema:
+            $ref: '#/definitions/github_com_akolanti_GoAPI_internal_api.InitJobResponse'
+        "400":
+          description: Invalid request data or chat ID
+          schema:
+            $ref: '#/definitions/github_com_akolanti_GoAPI_internal_api.JobResponse'
+      summary: Start a new chat job
+      tags:
+      - Messaging
+  /ingest:
+    post:
+      consumes:
+      - multipart/form-data
+      description: Receives a file via multipart/form-data, saves it to a temporary
+        directory, and queues an ingestion job.
+      parameters:
+      - description: The display name of the document
+        in: formData
+        name: document_name
+        required: true
+        type: string
+      - description: The PDF or DOCX file to upload
+        in: formData
+        name: document
+        required: true
+        type: file
+      produces:
+      - application/json
+      responses:
+        "202":
+          description: Accepted - returns job_id
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "400":
+          description: Bad Request - Missing fields or file too large
+          schema:
+            $ref: '#/definitions/github_com_akolanti_GoAPI_internal_api.JobResponse'
+        "500":
+          description: Internal Server Error - Storage or Write Error
+          schema:
+            $ref: '#/definitions/github_com_akolanti_GoAPI_internal_api.JobResponse'
+      summary: Upload a document for ingestion
+      tags:
+      - Ingestion
+  /status/{id}:
+    get:
+      consumes:
+      - application/json
+      description: Retrieves the current status of a specific job using its ID.
+      parameters:
+      - description: 'Job ID '
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Successful retrieval of job status
+          schema:
+            $ref: '#/definitions/github_com_akolanti_GoAPI_internal_api.JobResponse'
+        "404":
+          description: Job not found (returns Error object within JobResponse)
+          schema:
+            $ref: '#/definitions/github_com_akolanti_GoAPI_internal_api.JobResponse'
+      summary: Get job status
+      tags:
+      - Job Status
+schemes:
+- http
+- https
+swagger: "2.0"
