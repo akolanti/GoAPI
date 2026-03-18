@@ -32,6 +32,7 @@ const (
 
 	JobTypeQuery  JobType = "Query"
 	JobTypeIngest JobType = "Ingest"
+	JobTypeMCP    JobType = "MCP"
 )
 
 type Job struct {

@@ -24,12 +24,12 @@ func writeJsonResponse(w http.ResponseWriter, statusCode int, data interface{}) 
 	}
 }
 
-func validateId(id string, traceId string) (result jobModel.Job, isFound bool) {
+func validateId(id string, context context.Context) (result jobModel.Job, isFound bool) {
 	if id == "" {
 		logRH.Warn("Empty Job ID")
 		return jobModel.Job{}, false
 	}
-	return GetJobStatus(id, traceId)
+	return GetJobStatus(id, context)
 }
 
 func validateContext(ctx context.Context) bool {
@@ -98,4 +98,29 @@ func processNewJobData(request *http.Request, w http.ResponseWriter, requestData
 	res := adapter.ToInitJobResponse(newJob.id)
 	writeJsonResponse(w, http.StatusAccepted, res)
 
+}
+
+func ValidateChatRequest(chatReq api.ChatRequest) bool {
+	return validateMessage(chatReq.Message, chatReq.ChatID)
+}
+
+func ValidateMcpRequest(req api.MCPRequest) bool {
+	return validateMessage(req.Message, req.RequestId)
+}
+
+func validateMessage(message string, id string) bool {
+	if handlerInstance == nil {
+		return false
+	}
+	if handlerInstance == nil {
+		return false
+	}
+	logJH.Debug(" Validating message store id ", "Id :", id)
+	if message == "" {
+		return false
+	}
+	if id == "" {
+		return true
+	}
+	return handlerInstance.service.MessageStore.ValidateChatId(context.Background(), id)
 }

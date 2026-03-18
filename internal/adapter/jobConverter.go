@@ -27,8 +27,8 @@ func ToAPIResponse(job jobModel.Job) api.JobResponse {
 	}
 
 	result := api.Result{
-		Status:              string(job.Status),
-		RAGExternalResponse: ToRAGExternalStatus(job.JobPayload),
+		Status:           string(job.Status),
+		ExternalResponse: ToRAGExternalStatus(job.JobPayload),
 	}
 
 	return api.JobResponse{
@@ -41,12 +41,12 @@ func ToAPIResponse(job jobModel.Job) api.JobResponse {
 	}
 }
 
-func ToRAGExternalStatus(ragData jobModel.JobPayload) *api.RAGResponse {
+func ToRAGExternalStatus(ragData jobModel.JobPayload) *api.Response {
 	if ragData.Answer == "" && len(ragData.Sources) == 0 {
 		return nil
 	}
 
-	return &api.RAGResponse{
+	return &api.Response{
 		Question: ragData.Question,
 		Answer:   ragData.Answer,
 		Sources:  ragData.Sources,
@@ -60,8 +60,8 @@ func BadRequest(id string, error string, code int) api.JobResponse {
 		StartTime: time.Time{},
 		EndTime:   time.Time{},
 		Result: api.Result{
-			Status:              string(api.JobStatusError),
-			RAGExternalResponse: ToRAGExternalStatus(jobModel.JobPayload{}),
+			Status:           string(api.JobStatusError),
+			ExternalResponse: ToRAGExternalStatus(jobModel.JobPayload{}),
 		},
 		Error: &api.JobOutgoingError{
 			Code:    code,

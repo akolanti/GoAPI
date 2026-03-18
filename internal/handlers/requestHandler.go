@@ -12,7 +12,6 @@ import (
 	"github.com/akolanti/GoAPI/internal/adapter"
 	"github.com/akolanti/GoAPI/internal/adapter/utils"
 	"github.com/akolanti/GoAPI/internal/api"
-	"github.com/akolanti/GoAPI/internal/config"
 	"github.com/akolanti/GoAPI/pkg/logger_i"
 )
 
@@ -64,23 +63,6 @@ func ChatHandler(w http.ResponseWriter, request *http.Request) {
 			WriteErrorResponse(w, http.StatusBadRequest, requestData.ChatID, "Bad Request")
 			return
 		}
-		//chatID := requestData.ChatID
-		//if chatID == "" {
-		//	chatID = utils.GetNewUUID()
-		//	logRH.Debug(" New Chat request : ", "chatID:", chatID)
-		//}
-		//newData := newJobData{
-		//	id:        utils.GetNewUUID(),
-		//	chatId:    chatID,
-		//	message:   requestData.Message,
-		//	isNewChat: requestData.ChatID == "",
-		//	traceId:   request.Context().Value(config.TRACE_ID_KEY).(string),
-		//}
-		//newData := processNewJobData(request, requestData, "", "")
-		//logRH.Debug(" Trace ID : ", "trace:", newData.traceId)
-		//CreateNewJob(newData)
-		//res := adapter.ToInitJobResponse(newData.id)
-		//writeJsonResponse(w, http.StatusAccepted, res)
 		processNewJobData(request, w, requestData, "", "") //5 param method is ugly change this
 		return
 	}
@@ -102,7 +84,7 @@ func GetStatusHandler(w http.ResponseWriter, r *http.Request) {
 	if validateContext(r.Context()) {
 		//use chi get the url id
 		idString := utils.GetChiURLParam(r, "id")
-		result, isFound := validateId(idString, r.Context().Value(config.TRACE_ID_KEY).(string))
+		result, isFound := validateId(idString, r.Context())
 
 		logRH.Debug("Get Status Request:", "URL path", r.URL.Path)
 		if !isFound {
@@ -175,4 +157,23 @@ func PostIngestHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	logRH.Warn("Invalid Context by request ", r.RemoteAddr)
+}
+
+func MCPHandler(w http.ResponseWriter, request *http.Request) {
+	if validateContext(request.Context()) {
+		var requestData api.MCPRequest
+		defer func(Body io.ReadCloser) {
+			err := Body.Close()
+			if err != nil {
+				logRH.Error("Couldn't close the mcp reader :", err)
+			}
+		}(request.Body)
+		if err := json.NewDecoder(request.Body).Decode(&requestData); err != nil || !ValidateMcpRequest(requestData) {
+
+			logRH.Warn("Bad mcp Request: ", "error:", err, "request data:", requestData)
+			WriteErrorResponse(w, http.StatusBadRequest, requestData.RequestId, "Bad Request")
+			return
+		}
+		//think about the response
+	}
 }

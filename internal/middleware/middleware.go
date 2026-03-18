@@ -28,6 +28,7 @@ var GetHandler = Wrap(handlers.GetHandler)
 var ChatHandler = Wrap(handlers.ChatHandler)
 var GetStatusHandler = Wrap(handlers.GetStatusHandler)
 var PostIngestHandler = Wrap(handlers.PostIngestHandler)
+var MCPHandler = Wrap(handlers.MCPHandler)
 
 func Wrap(next http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
@@ -53,11 +54,11 @@ func processRequest(re requestResponseStruct) requestResponseStruct {
 		handleBadRequest(re)
 		return re //stop if auth fails
 	}
-	//re = rateLimiter(re)
-	//if re.badRequest.isBadRequest {
-	//	handleBadRequest(re)
-	//	return re //stop here if rate limit fails
-	//}
+	re = rateLimiter(re)
+	if re.badRequest.isBadRequest {
+		handleBadRequest(re)
+		return re //stop here if rate limit fails
+	}
 
 	return re
 }

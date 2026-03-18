@@ -6,7 +6,7 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/akolanti/GoAPI/internal/api"
+	"github.com/akolanti/GoAPI/internal/adapter/utils"
 	"github.com/akolanti/GoAPI/internal/config"
 	"github.com/akolanti/GoAPI/internal/domain/jobModel"
 	"github.com/akolanti/GoAPI/internal/job"
@@ -45,26 +45,11 @@ func CreateNewJob(newJob newJobData) {
 	}
 }
 
-func GetJobStatus(id string, traceId string) (result jobModel.Job, isFound bool) {
-	ctxC := context.WithValue(context.Background(), config.TRACE_ID_KEY, traceId)
+func GetJobStatus(id string, ctx context.Context) (result jobModel.Job, isFound bool) {
 	if handlerInstance != nil {
-		return handlerInstance.service.JobStore.GetJob(ctxC, id)
+		return handlerInstance.service.JobStore.GetJob(ctx, id)
 	}
 	return result, false
-}
-
-func ValidateChatRequest(chatReq api.ChatRequest) bool {
-	if handlerInstance == nil {
-		return false
-	}
-	logJH.Debug(" Validating chat id ", "chatId :", chatReq.ChatID)
-	if chatReq.Message == "" {
-		return false
-	}
-	if chatReq.ChatID == "" {
-		return true
-	}
-	return handlerInstance.service.MessageStore.ValidateChatId(context.Background(), chatReq.ChatID)
 }
 
 // private methods
@@ -117,4 +102,16 @@ func (h *JobHandler) initNewChat(chatId string, traceId string) {
 		logJH.Error("Error initiating new chat", chatId, err)
 		return
 	}
+}
+
+func InsertNewJobForMCP(message string, traceId string, jobId string) {
+	newJob := newJobData{
+		message:          message,
+		traceId:          traceId,
+		isNewChat:        true,
+		isDocumentIngest: false,
+		id:               jobId,
+		chatId:           utils.GetNewUUID(),
+	}
+	CreateNewJob(newJob)
 }
