@@ -30,7 +30,7 @@ import (
 	"github.com/akolanti/GoAPI/internal/job"
 	"github.com/akolanti/GoAPI/internal/rag"
 	"github.com/akolanti/GoAPI/internal/rag/embedding/googleEmbedding"
-	"github.com/akolanti/GoAPI/internal/rag/llm/gemini"
+	"github.com/akolanti/GoAPI/internal/llm/gemini"
 	"github.com/akolanti/GoAPI/internal/rag/vectorDB/qdrantDB"
 	"github.com/akolanti/GoAPI/internal/server"
 	"github.com/akolanti/GoAPI/internal/worker"

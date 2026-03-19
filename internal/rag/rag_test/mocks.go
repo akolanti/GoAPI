@@ -9,18 +9,18 @@ import (
 // MockVectorDB implements vectorDB.DataProcessor
 type MockVectorDB struct {
 	// Control fields to simulate different behaviors
-	OnSearch           func(ctx context.Context, vectorVal []float32) ([]string, error)
+	OnSearch           func(ctx context.Context, vectorVal []float32) ([]string, []string, error)
 	OnGetCachedAnswer  func(ctx context.Context, queryVector []float32) (string, bool, error)
 	OnSaveToCache      func(ctx context.Context, id string, vector []float32, answer string) error
 	OnCreateCollection func(ctx context.Context, name string) error
 	OnUpsertBatch      func(ctx context.Context, name string, chunks []commonModels.DocChunk, vectors [][]float32) error
 }
 
-func (m *MockVectorDB) Search(ctx context.Context, v []float32) ([]string, error) {
+func (m *MockVectorDB) Search(ctx context.Context, v []float32) ([]string, []string, error) {
 	if m.OnSearch != nil {
 		return m.OnSearch(ctx, v)
 	}
-	return []string{"default context"}, nil
+	return []string{"default context"}, nil, nil
 }
 
 func (m *MockVectorDB) GetCachedAnswer(ctx context.Context, v []float32) (string, bool, error) {

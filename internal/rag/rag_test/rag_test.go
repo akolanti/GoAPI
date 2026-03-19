@@ -63,8 +63,8 @@ func TestProcessRequest_Scenarios(t *testing.T) {
 				v.OnGetCachedAnswer = func(ctx context.Context, emb []float32) (string, bool, error) {
 					return "", false, nil
 				}
-				v.OnSearch = func(ctx context.Context, v []float32) ([]string, error) {
-					return nil, errors.New("db timeout")
+				v.OnSearch = func(ctx context.Context, v []float32) ([]string, []string, error) {
+					return nil, nil, errors.New("db timeout")
 				}
 			},
 			expectedStatus: jobModel.JobStatusError,

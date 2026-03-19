@@ -174,6 +174,7 @@ func MCPHandler(w http.ResponseWriter, request *http.Request) {
 			WriteErrorResponse(w, http.StatusBadRequest, requestData.RequestId, "Bad Request")
 			return
 		}
+		//mcp handler(message, id)
 		//think about the response
 	}
 }

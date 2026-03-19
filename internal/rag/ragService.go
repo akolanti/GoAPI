@@ -8,10 +8,10 @@ import (
 	"github.com/akolanti/GoAPI/internal/adapter/utils"
 	"github.com/akolanti/GoAPI/internal/config"
 	"github.com/akolanti/GoAPI/internal/domain/jobModel"
+	"github.com/akolanti/GoAPI/internal/llm"
 	"github.com/akolanti/GoAPI/internal/metrics"
 	"github.com/akolanti/GoAPI/internal/rag/embedding"
 	"github.com/akolanti/GoAPI/internal/rag/ingest"
-	"github.com/akolanti/GoAPI/internal/rag/llm"
 	"github.com/akolanti/GoAPI/internal/rag/vectorDB"
 	"github.com/akolanti/GoAPI/pkg/logger_i"
 )

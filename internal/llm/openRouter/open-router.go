@@ -1,4 +1,4 @@
-package openaiModels
+package openRouter
 
 import (
 	"context"
@@ -7,12 +7,14 @@ import (
 	"sync"
 
 	"github.com/akolanti/GoAPI/internal/config"
-	"github.com/akolanti/GoAPI/internal/rag/llm"
+	"github.com/akolanti/GoAPI/internal/llm"
 	"github.com/akolanti/GoAPI/pkg/logger_i"
 
 	"github.com/openai/openai-go"
 	"github.com/openai/openai-go/option"
 )
+
+const openRouterBaseURL = "https://openrouter.ai/api/v1"
 
 type llmClient struct {
 	client    *openai.Client
@@ -21,42 +23,41 @@ type llmClient struct {
 }
 
 var logger *logger_i.Logger
-var openAIClient *llmClient
+var openRouterClient *llmClient
 var once sync.Once
 
-func GetOpenAIClient(ctx context.Context, modelName string, apikey string) llm.Provider {
+func GetOpenRouterClient(ctx context.Context, modelName string, apikey string) llm.Provider {
 	once.Do(func() {
-		logger = logger_i.NewLogger("llm_openai")
-		newOpenAIClient(ctx, modelName, apikey)
+		logger = logger_i.NewLogger("llm_openrouter")
+		newOpenRouterClient(ctx, modelName, apikey)
 	})
 
-	if openAIClient == nil {
+	if openRouterClient == nil {
 		return nil
 	}
 
 	return &llmClient{
-		client:    openAIClient.client,
-		modelName: openAIClient.modelName,
-		prompt:    openAIClient.prompt,
+		client:    openRouterClient.client,
+		modelName: openRouterClient.modelName,
+		prompt:    openRouterClient.prompt,
 	}
 }
 
-func newOpenAIClient(ctx context.Context, modelName string, apikey string) {
-
+func newOpenRouterClient(ctx context.Context, modelName string, apikey string) {
 	c := openai.NewClient(
 		option.WithAPIKey(apikey),
+		option.WithBaseURL(openRouterBaseURL),
 	)
 
-	openAIClient = &llmClient{client: &c, modelName: modelName, prompt: config.LLMPrompt}
-	logger.Debug("OpenAI ", modelName, " client created")
-	logger.Info("OpenAI client created")
-	go closeClient(ctx, openAIClient)
-
+	openRouterClient = &llmClient{client: &c, modelName: modelName, prompt: config.LLMPrompt}
+	logger.Debug("OpenRouter ", modelName, " client created")
+	logger.Info("OpenRouter client created")
+	go closeClient(ctx, openRouterClient)
 }
 
 func (c *llmClient) Generate(ctx context.Context, userQuery string, matches []string, messageHistory []string) (string, error) {
 	if c.client == nil {
-		return "", fmt.Errorf("openai client is nil")
+		return "", fmt.Errorf("openrouter client is nil")
 	}
 
 	logger.With("traceId", ctx.Value("traceId"))
@@ -65,7 +66,7 @@ func (c *llmClient) Generate(ctx context.Context, userQuery string, matches []st
 	contextBuilder.WriteString("This is the context:\n")
 	contextBuilder.WriteString(strings.Join(matches, "\n"))
 
-	if messageHistory != nil && len(messageHistory) > 0 {
+	if len(messageHistory) > 0 {
 		contextBuilder.WriteString("\n\nThis is Message History:\n")
 		contextBuilder.WriteString("Question stands for the user question and the answer stands for the answer you gave, sources are the source for answer.\n")
 		contextBuilder.WriteString(strings.Join(messageHistory, "\n"))
@@ -83,7 +84,7 @@ func (c *llmClient) Generate(ctx context.Context, userQuery string, matches []st
 
 	completion, err := c.client.Chat.Completions.New(ctx, params)
 	if err != nil {
-		logger.Error("Error generating content from OpenAI:", "error", err)
+		logger.Error("Error generating content from OpenRouter:", "error", err)
 		return "", err
 	}
 
@@ -91,12 +92,12 @@ func (c *llmClient) Generate(ctx context.Context, userQuery string, matches []st
 		return completion.Choices[0].Message.Content, nil
 	}
 
-	return "", fmt.Errorf("no content returned from OpenAI")
+	return "", fmt.Errorf("no content returned from OpenRouter")
 }
 
 func closeClient(ctx context.Context, llm *llmClient) {
 	<-ctx.Done()
-	logger.Info("Closing OpenAI client")
+	logger.Info("Closing OpenRouter client")
 	llm.client = nil
 	llm.modelName = ""
 	llm.prompt = ""

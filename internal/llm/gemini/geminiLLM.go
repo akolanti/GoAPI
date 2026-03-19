@@ -7,7 +7,7 @@ import (
 	"sync"
 
 	"github.com/akolanti/GoAPI/internal/config"
-	"github.com/akolanti/GoAPI/internal/rag/llm"
+	"github.com/akolanti/GoAPI/internal/llm"
 	"github.com/akolanti/GoAPI/pkg/logger_i"
 	"google.golang.org/genai"
 )
