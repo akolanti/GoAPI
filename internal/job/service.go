@@ -29,3 +29,14 @@ func InitJobService(cfg ServiceConfig) *Service {
 		MessageStore:      cfg.MessageStore,
 	}
 }
+
+type CreateJobParams struct {
+	ID               string
+	ChatID           string
+	Message          string
+	IsNewChat        bool
+	TraceID          string
+	IsDocumentIngest bool
+	DocumentName     string
+	DocumentSource   string
+}

@@ -28,9 +28,10 @@ import (
 	jobmodel "github.com/akolanti/GoAPI/internal/domain/jobModel"
 	"github.com/akolanti/GoAPI/internal/handlers"
 	"github.com/akolanti/GoAPI/internal/job"
+	llmFactory "github.com/akolanti/GoAPI/internal/llm/factory"
+	"github.com/akolanti/GoAPI/internal/mcpImpl"
 	"github.com/akolanti/GoAPI/internal/rag"
 	"github.com/akolanti/GoAPI/internal/rag/embedding/googleEmbedding"
-	"github.com/akolanti/GoAPI/internal/llm/gemini"
 	"github.com/akolanti/GoAPI/internal/rag/vectorDB/qdrantDB"
 	"github.com/akolanti/GoAPI/internal/server"
 	"github.com/akolanti/GoAPI/internal/worker"
@@ -80,7 +81,7 @@ func main() {
 
 	vectorDB := qdrantDB.GetQuadrantClient(serviceContext)
 	embeddingService := googleEmbedding.GetGoogleEmbeddingClient(serviceContext, config.GoogleEmbeddingModel, config.GoogleEmbeddingAPIKey)
-	llmProvider := gemini.GetGeminiClient(serviceContext, config.GoogleEmbeddingAPIKey, config.GeminiModelName)
+	llmProvider := llmFactory.NewProvider(serviceContext)
 
 	if vectorDB == nil || embeddingService == nil || llmProvider == nil {
 		logger.Error("One or more external services failed to initialize. Shutting down.")
@@ -90,7 +91,8 @@ func main() {
 
 	ragService := rag.NewService(vectorDB, llmProvider, embeddingService)
 
-	handlers.InitJobHandler(service)
+	handlers.InitHandler(service)
+	mcpImpl.InitMCPHandler(llmProvider, service)
 
 	//init worker pool
 	worker.InitServices(service, ragService)

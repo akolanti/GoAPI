@@ -3,14 +3,13 @@ package mcpImpl
 import (
 	"context"
 
-	"github.com/akolanti/GoAPI/internal/ragBridge"
 	"github.com/akolanti/GoAPI/pkg/logger_i"
 	"github.com/modelcontextprotocol/go-sdk/mcp"
 )
 
 var logMCP *logger_i.Logger
 
-func InitMCP() {
+func InitMCPServer() {
 	logMCP = logger_i.NewLogger("MCP:")
 
 	server := mcp.NewServer(&mcp.Implementation{
@@ -28,34 +27,14 @@ func InitMCP() {
 	}
 }
 
-func RAGQuery(ctx context.Context, req *mcp.CallToolRequest, in ProcessQueryStruct) (*mcp.CallToolResult, QueryResponseStruct, error) {
+func RAGQuery(ctx context.Context, req *mcp.CallToolRequest, in ProcessQueryStruct) (*mcp.CallToolResult, QueryResult, error) {
 	logMCP.With("traceId", in.Id).Info("Received RAG Query tool call")
 
-	res := ragBridge.ProcessQuery(ctx, in.Query, in.Id)
-
-	return nil, QueryResponseStruct{
-		Id:       res.Id,
-		Query:    res.Query,
-		Response: res.Response,
-		Sources:  res.Sources,
-		Status:   res.Status,
-		Err:      res.Err,
-		DoRetry:  res.DoRetry,
-	}, res.Err
-
+	res := ProcessQuery(ctx, in.Query, in.Id)
+	return nil, res, res.Err
 }
 
 type ProcessQueryStruct struct {
 	Query string `json:"Query"`
 	Id    string `json:"id"`
-}
-
-type QueryResponseStruct struct {
-	Id       string   `json:"id"`
-	Query    string   `json:"query"`
-	Response string   `json:"response"`
-	Sources  []string `json:"sources"`
-	Status   string   `json:"status"`
-	Err      error    `json:"err,omitempty"`
-	DoRetry  bool     `json:"do_retry"`
 }

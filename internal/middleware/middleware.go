@@ -29,6 +29,7 @@ var ChatHandler = Wrap(handlers.ChatHandler)
 var GetStatusHandler = Wrap(handlers.GetStatusHandler)
 var PostIngestHandler = Wrap(handlers.PostIngestHandler)
 var MCPHandler = Wrap(handlers.MCPHandler)
+var MCPStatusHandler = Wrap(handlers.MCPStatusHandler)
 
 func Wrap(next http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {

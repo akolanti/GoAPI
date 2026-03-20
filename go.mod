@@ -6,6 +6,7 @@ require github.com/go-chi/chi/v5 v5.2.4
 
 require (
 	github.com/alicebob/miniredis/v2 v2.36.1
+	github.com/anthropics/anthropic-sdk-go v1.27.1
 	github.com/dslipak/pdf v0.0.2
 	github.com/google/uuid v1.6.0
 	github.com/lu4p/cat v0.1.5
@@ -25,7 +26,6 @@ require (
 	cloud.google.com/go/compute/metadata v0.9.0 // indirect
 	github.com/EndFirstCorp/peekingReader v0.0.0-20171012052444-257fb6f1a1a6 // indirect
 	github.com/KyleBanks/depth v1.2.1 // indirect
-	github.com/anthropics/anthropic-sdk-go v1.27.1 // indirect
 	github.com/beorn7/perks v1.0.1 // indirect
 	github.com/cespare/xxhash/v2 v2.3.0 // indirect
 	github.com/dgryski/go-rendezvous v0.0.0-20200823014737-9f7001d12a5f // indirect

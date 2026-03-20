@@ -54,9 +54,10 @@ const (
 	LLMConnectionString  = ""
 	LLMKey               = ""
 	LLMPrompt            = ""
+	LLMProvider          = "gemini" // "gemini" | "claude" | "openai" | "openrouter"
+	LLMModelName         = "gemini-2.5-flash-lite-preview-09-2025"
 
 	//embeddings
-	GeminiModelName      = "gemini-2.5-flash-lite-preview-09-2025"
 	GoogleEmbeddingModel = "gemini-embedding-001"
 
 	ModelTemperature float32 = 0.7

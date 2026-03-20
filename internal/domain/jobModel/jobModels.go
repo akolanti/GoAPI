@@ -75,3 +75,4 @@ type MessageStore interface {
 	InitNewChat(ctx context.Context, id string) error
 	GetMessageHistory(ctx context.Context, chatId string) (error, []string)
 }
+

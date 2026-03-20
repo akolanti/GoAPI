@@ -2,6 +2,7 @@ package claude
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"strings"
 	"sync"
@@ -91,6 +92,96 @@ func (c *llmClient) Generate(ctx context.Context, userQuery string, matches []st
 	}
 
 	return "", fmt.Errorf("no content returned from Claude")
+}
+
+func (c *llmClient) ChatWithTools(ctx context.Context, messages []llm.Message, tools []llm.Tool) (*llm.Response, error) {
+	if c.client == nil {
+		return nil, fmt.Errorf("claude client is nil")
+	}
+
+	logger.With("traceId", ctx.Value("traceId"))
+
+	anthropicTools := make([]anthropic.ToolUnionParam, 0, len(tools))
+	for _, t := range tools {
+		anthropicTools = append(anthropicTools, anthropic.ToolUnionParam{
+			OfTool: &anthropic.ToolParam{
+				Name:        t.Name,
+				Description: anthropic.String(t.Description),
+				InputSchema: anthropic.ToolInputSchemaParam{
+					Properties: t.InputSchema["properties"],
+				},
+			},
+		})
+	}
+
+	anthropicMessages := make([]anthropic.MessageParam, 0, len(messages))
+	for _, msg := range messages {
+		anthropicMessages = append(anthropicMessages, toAnthropicMessage(msg))
+	}
+
+	resp, err := c.client.Messages.New(ctx, anthropic.MessageNewParams{
+		Model:     anthropic.Model(c.modelName),
+		MaxTokens: 4096,
+		System: []anthropic.TextBlockParam{
+			{Text: config.ModelContext},
+		},
+		Messages: anthropicMessages,
+		Tools:    anthropicTools,
+	})
+	if err != nil {
+		logger.Error("Error calling Claude ChatWithTools:", "error", err)
+		return nil, err
+	}
+
+	return fromAnthropicResponse(resp), nil
+}
+
+func toAnthropicMessage(msg llm.Message) anthropic.MessageParam {
+	parts := make([]anthropic.ContentBlockParamUnion, 0, len(msg.Content))
+	for _, block := range msg.Content {
+		switch block.Type {
+		case llm.ContentBlockTypeText:
+			parts = append(parts, anthropic.NewTextBlock(block.Text))
+		case llm.ContentBlockTypeToolUse:
+			parts = append(parts, anthropic.NewToolUseBlock(block.ToolCallID, block.ToolArgs, block.ToolName))
+		case llm.ContentBlockTypeToolResult:
+			parts = append(parts, anthropic.NewToolResultBlock(block.ToolCallID, block.ToolResult, false))
+		}
+	}
+
+	if msg.Role == llm.RoleAssistant {
+		return anthropic.NewAssistantMessage(parts...)
+	}
+	return anthropic.NewUserMessage(parts...)
+}
+
+func fromAnthropicResponse(resp *anthropic.Message) *llm.Response {
+	blocks := make([]llm.ContentBlock, 0, len(resp.Content))
+	for _, cb := range resp.Content {
+		switch cb.Type {
+		case "text":
+			blocks = append(blocks, llm.ContentBlock{
+				Type: llm.ContentBlockTypeText,
+				Text: cb.Text,
+			})
+		case "tool_use":
+			var args map[string]any
+			_ = json.Unmarshal(cb.Input, &args)
+			blocks = append(blocks, llm.ContentBlock{
+				Type:       llm.ContentBlockTypeToolUse,
+				ToolCallID: cb.ID,
+				ToolName:   cb.Name,
+				ToolArgs:   args,
+			})
+		}
+	}
+
+	stopReason := llm.StopReasonEndTurn
+	if resp.StopReason == anthropic.StopReasonToolUse {
+		stopReason = llm.StopReasonToolUse
+	}
+
+	return &llm.Response{Content: blocks, StopReason: stopReason}
 }
 
 func closeClient(ctx context.Context, llm *llmClient) {

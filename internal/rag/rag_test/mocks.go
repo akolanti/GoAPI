@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"github.com/akolanti/GoAPI/internal/domain/commonModels"
+	"github.com/akolanti/GoAPI/internal/llm"
 )
 
 // MockVectorDB implements vectorDB.DataProcessor
@@ -78,4 +79,11 @@ func (m *MockLLM) Generate(ctx context.Context, q string, mth []string, hist []s
 		return m.OnGenerate(ctx, q, mth, hist)
 	}
 	return "mocked llm response", nil
+}
+
+func (m *MockLLM) ChatWithTools(ctx context.Context, messages []llm.Message, tools []llm.Tool) (*llm.Response, error) {
+	return &llm.Response{
+		Content:    []llm.ContentBlock{{Type: llm.ContentBlockTypeText, Text: "mocked tool response"}},
+		StopReason: llm.StopReasonEndTurn,
+	}, nil
 }

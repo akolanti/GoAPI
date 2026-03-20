@@ -35,6 +35,7 @@ func CreateServer(listenAddr string) {
 	r.Router.Get("/status/{id}", middleware.GetStatusHandler)
 	r.Router.Post("/ingest", middleware.PostIngestHandler)
 	r.Router.Post("/mcp", middleware.MCPHandler)
+	r.Router.Get("/mcp/status/{id}", middleware.MCPStatusHandler)
 	server = &http.Server{
 		Addr:         listenAddr,
 		Handler:      r.Router,

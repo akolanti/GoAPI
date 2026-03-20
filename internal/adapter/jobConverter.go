@@ -70,3 +70,4 @@ func BadRequest(id string, error string, code int) api.JobResponse {
 		},
 	}
 }
+

@@ -2,6 +2,7 @@ package openaiModels
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"strings"
 	"sync"
@@ -12,6 +13,7 @@ import (
 
 	"github.com/openai/openai-go"
 	"github.com/openai/openai-go/option"
+	"github.com/openai/openai-go/shared"
 )
 
 type llmClient struct {
@@ -65,7 +67,7 @@ func (c *llmClient) Generate(ctx context.Context, userQuery string, matches []st
 	contextBuilder.WriteString("This is the context:\n")
 	contextBuilder.WriteString(strings.Join(matches, "\n"))
 
-	if messageHistory != nil && len(messageHistory) > 0 {
+	if len(messageHistory) > 0 {
 		contextBuilder.WriteString("\n\nThis is Message History:\n")
 		contextBuilder.WriteString("Question stands for the user question and the answer stands for the answer you gave, sources are the source for answer.\n")
 		contextBuilder.WriteString(strings.Join(messageHistory, "\n"))
@@ -92,6 +94,110 @@ func (c *llmClient) Generate(ctx context.Context, userQuery string, matches []st
 	}
 
 	return "", fmt.Errorf("no content returned from OpenAI")
+}
+
+func (c *llmClient) ChatWithTools(ctx context.Context, messages []llm.Message, tools []llm.Tool) (*llm.Response, error) {
+	if c.client == nil {
+		return nil, fmt.Errorf("openai client is nil")
+	}
+
+	logger.With("traceId", ctx.Value("traceId"))
+
+	oaiTools := make([]openai.ChatCompletionToolParam, 0, len(tools))
+	for _, t := range tools {
+		oaiTools = append(oaiTools, openai.ChatCompletionToolParam{
+			Function: shared.FunctionDefinitionParam{
+				Name:        t.Name,
+				Description: openai.String(t.Description),
+				Parameters:  openai.FunctionParameters(t.InputSchema),
+			},
+		})
+	}
+
+	oaiMessages := toOpenAIMessages(messages)
+
+	completion, err := c.client.Chat.Completions.New(ctx, openai.ChatCompletionNewParams{
+		Model:    c.modelName,
+		Messages: oaiMessages,
+		Tools:    oaiTools,
+	})
+	if err != nil {
+		logger.Error("Error calling OpenAI ChatWithTools:", "error", err)
+		return nil, err
+	}
+
+	if len(completion.Choices) == 0 {
+		return nil, fmt.Errorf("no choices returned from OpenAI")
+	}
+
+	return fromOpenAIResponse(completion.Choices[0]), nil
+}
+
+func toOpenAIMessages(messages []llm.Message) []openai.ChatCompletionMessageParamUnion {
+	result := make([]openai.ChatCompletionMessageParamUnion, 0, len(messages))
+	for _, msg := range messages {
+		switch msg.Role {
+		case llm.RoleUser:
+			for _, block := range msg.Content {
+				switch block.Type {
+				case llm.ContentBlockTypeText:
+					result = append(result, openai.UserMessage(block.Text))
+				case llm.ContentBlockTypeToolResult:
+					result = append(result, openai.ToolMessage(block.ToolResult, block.ToolCallID))
+				}
+			}
+		case llm.RoleAssistant:
+			var toolCalls []openai.ChatCompletionMessageToolCallParam
+			var text string
+			for _, block := range msg.Content {
+				switch block.Type {
+				case llm.ContentBlockTypeText:
+					text = block.Text
+				case llm.ContentBlockTypeToolUse:
+					argsJSON, _ := json.Marshal(block.ToolArgs)
+					toolCalls = append(toolCalls, openai.ChatCompletionMessageToolCallParam{
+						ID: block.ToolCallID,
+						Function: openai.ChatCompletionMessageToolCallFunctionParam{
+							Name:      block.ToolName,
+							Arguments: string(argsJSON),
+						},
+					})
+				}
+			}
+			if len(toolCalls) > 0 {
+				result = append(result, openai.ChatCompletionMessageParamUnion{
+					OfAssistant: &openai.ChatCompletionAssistantMessageParam{
+						ToolCalls: toolCalls,
+					},
+				})
+			} else {
+				result = append(result, openai.AssistantMessage(text))
+			}
+		}
+	}
+	return result
+}
+
+func fromOpenAIResponse(choice openai.ChatCompletionChoice) *llm.Response {
+	if choice.FinishReason == "tool_calls" {
+		blocks := make([]llm.ContentBlock, 0, len(choice.Message.ToolCalls))
+		for _, tc := range choice.Message.ToolCalls {
+			var args map[string]any
+			_ = json.Unmarshal([]byte(tc.Function.Arguments), &args)
+			blocks = append(blocks, llm.ContentBlock{
+				Type:       llm.ContentBlockTypeToolUse,
+				ToolCallID: tc.ID,
+				ToolName:   tc.Function.Name,
+				ToolArgs:   args,
+			})
+		}
+		return &llm.Response{Content: blocks, StopReason: llm.StopReasonToolUse}
+	}
+
+	return &llm.Response{
+		Content:    []llm.ContentBlock{{Type: llm.ContentBlockTypeText, Text: choice.Message.Content}},
+		StopReason: llm.StopReasonEndTurn,
+	}
 }
 
 func closeClient(ctx context.Context, llm *llmClient) {
