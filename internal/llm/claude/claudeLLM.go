@@ -58,7 +58,7 @@ func (c *llmClient) Generate(ctx context.Context, userQuery string, matches []st
 		return "", fmt.Errorf("claude client is nil")
 	}
 
-	logger.With("traceId", ctx.Value("traceId"))
+	//add logging later
 
 	var contextBuilder strings.Builder
 	contextBuilder.WriteString("This is the context:\n")
@@ -99,7 +99,8 @@ func (c *llmClient) ChatWithTools(ctx context.Context, messages []llm.Message, t
 		return nil, fmt.Errorf("claude client is nil")
 	}
 
-	logger.With("traceId", ctx.Value("traceId"))
+	log := logger.With("traceId", ctx.Value("traceId"))
+	_ = log
 
 	anthropicTools := make([]anthropic.ToolUnionParam, 0, len(tools))
 	for _, t := range tools {

@@ -2,6 +2,9 @@ package llm
 
 import "context"
 
+//y'all this is super inspired from the way claude responds in its api
+//claude is super good for enterprise stuff, so I modelled this after claude.
+
 type Role string
 
 const (

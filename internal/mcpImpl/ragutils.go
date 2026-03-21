@@ -75,13 +75,24 @@ func pollForAnswers(args trackJob) (mcpJob trackJob) {
 
 func extractDataFromJob(args trackJob, job jobModel.Job, err error) (res trackJob) {
 
+	//FYI , retry isnt implemented yet.
 	if err != nil {
 		args.Err = err
+		args.DoRetry = true // error during polling, retry might help
 		return args
 	}
 	args.Status = string(job.Status)
 	args.Response = job.JobPayload.Answer
 	args.Sources = job.JobPayload.Sources
+
+	switch job.Status {
+	case jobModel.JobStatusComplete:
+		args.DoRetry = false
+	case jobModel.JobStatusError:
+		args.DoRetry = job.Error.Retry
+	default:
+		args.DoRetry = false
+	}
 	return args
 }
 

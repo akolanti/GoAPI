@@ -54,9 +54,10 @@ const (
 	LLMConnectionString  = ""
 	LLMKey               = ""
 	LLMPrompt            = ""
-	LLMProvider          = "gemini" // "gemini" | "claude" | "openai" | "openrouter"
+	LLMProvider          = "openrouter" // "gemini" | "claude" | "openai" | "openrouter"
 	//LLMModelName         = "claude"
-	LLMModelName = "gemini-3-flash-preview"
+	LLMModelName = "openrouter/auto"
+	//LLMModelName = "gemini-3-flash-preview"
 
 	//embeddings
 	GoogleEmbeddingModel = "gemini-embedding-001"

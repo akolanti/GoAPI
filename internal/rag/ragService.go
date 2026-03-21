@@ -78,7 +78,7 @@ func (s *service) ProcessRequest(ctx context.Context, jobt jobModel.Job, message
 	// Embedding
 	embeddingStep, err := s.executeEmbeddingStep(processContext, inMethodLogger, &jobt)
 	if err != nil {
-		return s.jobError(jobt, err, "EMBEDDING_FAILURE", false)
+		return s.jobError(jobt, err, "EMBEDDING_FAILURE", true)
 	}
 
 	// Cache Check
@@ -90,13 +90,13 @@ func (s *service) ProcessRequest(ctx context.Context, jobt jobModel.Job, message
 	// Vector DB Search
 	matches, err := s.executeVectorSearchStep(processContext, inMethodLogger, &jobt, embeddingStep)
 	if err != nil {
-		return s.jobError(jobt, err, "VECTOR_DB_FAILURE", false)
+		return s.jobError(jobt, err, "VECTOR_DB_FAILURE", true)
 	}
 
 	// LLM Generation
 	answer, err := s.executeLLMStep(processContext, inMethodLogger, &jobt, matches, messageHistory)
 	if err != nil {
-		return s.jobError(jobt, err, "LLM_GENERATION_FAILURE", false)
+		return s.jobError(jobt, err, "LLM_GENERATION_FAILURE", true)
 	}
 
 	//Background Cache Save

@@ -62,7 +62,8 @@ func (c *llmClient) Generate(ctx context.Context, userQuery string, matches []st
 		return "", fmt.Errorf("openrouter client is nil")
 	}
 
-	logger.With("traceId", ctx.Value("traceId"))
+	log := logger.With("traceId", ctx.Value("traceId"))
+	_ = log
 
 	var contextBuilder strings.Builder
 	contextBuilder.WriteString("This is the context:\n")
@@ -102,7 +103,7 @@ func (c *llmClient) ChatWithTools(ctx context.Context, messages []llm.Message, t
 		return nil, fmt.Errorf("openrouter client is nil")
 	}
 
-	logger.With("traceId", ctx.Value("traceId"))
+	//add logging later
 
 	oaiTools := make([]openai.ChatCompletionToolParam, 0, len(tools))
 	for _, t := range tools {
@@ -115,7 +116,10 @@ func (c *llmClient) ChatWithTools(ctx context.Context, messages []llm.Message, t
 		})
 	}
 
-	oaiMessages := toOpenRouterMessages(messages)
+	oaiMessages := append(
+		[]openai.ChatCompletionMessageParamUnion{openai.SystemMessage(config.ModelContext)},
+		toOpenRouterMessages(messages)...,
+	)
 
 	completion, err := c.client.Chat.Completions.New(ctx, openai.ChatCompletionNewParams{
 		Model:    c.modelName,
@@ -166,10 +170,16 @@ func toOpenRouterMessages(messages []llm.Message) []openai.ChatCompletionMessage
 				}
 			}
 			if len(toolCalls) > 0 {
+				assistantMsg := &openai.ChatCompletionAssistantMessageParam{
+					ToolCalls: toolCalls,
+				}
+				if text != "" {
+					assistantMsg.Content = openai.ChatCompletionAssistantMessageParamContentUnion{
+						OfString: openai.String(text),
+					}
+				}
 				result = append(result, openai.ChatCompletionMessageParamUnion{
-					OfAssistant: &openai.ChatCompletionAssistantMessageParam{
-						ToolCalls: toolCalls,
-					},
+					OfAssistant: assistantMsg,
 				})
 			} else {
 				result = append(result, openai.AssistantMessage(text))
