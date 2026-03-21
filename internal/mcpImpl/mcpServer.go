@@ -9,7 +9,7 @@ import (
 
 var logMCP *logger_i.Logger
 
-func InitMCPServer() {
+func InitMCPServer(ctx context.Context, transport *mcp.InMemoryTransport) {
 	logMCP = logger_i.NewLogger("MCP:")
 
 	server := mcp.NewServer(&mcp.Implementation{
@@ -18,13 +18,14 @@ func InitMCPServer() {
 	}, nil)
 
 	mcp.AddTool(server, &mcp.Tool{
-		Name:        "RAG Query",
+		Name:        "RAGQuery",
 		Description: "This tool takes a user query and returns a response based on the RAG system. The response includes the answer to the query, the sources used to generate the answer, and the status of the query processing.",
 	}, RAGQuery)
 
-	if err := server.Run(context.Background(), &mcp.StdioTransport{}); err != nil {
+	if err := server.Run(ctx, transport); err != nil {
 		logMCP.With("error", err).Error("Failed to start MCP server")
 	}
+	logMCP.Info("MCP server stopped")
 }
 
 func RAGQuery(ctx context.Context, req *mcp.CallToolRequest, in ProcessQueryStruct) (*mcp.CallToolResult, QueryResult, error) {

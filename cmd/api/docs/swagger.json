@@ -114,6 +114,84 @@
                 }
             }
         },
+        "/mcp": {
+            "post": {
+                "description": "Accepts a question, runs tool-use via MCP and returns a job ID. This is stateless - each request is independent with no conversation history. Use /chat for multi-turn conversations.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "MCP"
+                ],
+                "summary": "Submit a stateless MCP query",
+                "parameters": [
+                    {
+                        "description": "Question and optional request ID",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/github_com_akolanti_GoAPI_internal_api.MCPRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "202": {
+                        "description": "Job created - poll /mcp/status/{id}",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_akolanti_GoAPI_internal_api.InitJobResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid request",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_akolanti_GoAPI_internal_api.JobResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/mcp/status/{id}": {
+            "get": {
+                "description": "Poll this endpoint to check the status of an MCP query. Returns the final answer when complete.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "MCP"
+                ],
+                "summary": "Get MCP job status",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Job ID from the /mcp response",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Current job status and result if complete",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_akolanti_GoAPI_internal_api.JobResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Job not found",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_akolanti_GoAPI_internal_api.JobResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/status/{id}": {
             "get": {
                 "description": "Retrieves the current status of a specific job using its ID.",
@@ -221,7 +299,21 @@
                 }
             }
         },
-        "github_com_akolanti_GoAPI_internal_api.RAGResponse": {
+        "github_com_akolanti_GoAPI_internal_api.MCPRequest": {
+            "type": "object",
+            "required": [
+                "message"
+            ],
+            "properties": {
+                "message": {
+                    "type": "string"
+                },
+                "request_id": {
+                    "type": "string"
+                }
+            }
+        },
+        "github_com_akolanti_GoAPI_internal_api.Response": {
             "type": "object",
             "properties": {
                 "answer": {
@@ -241,8 +333,8 @@
         "github_com_akolanti_GoAPI_internal_api.Result": {
             "type": "object",
             "properties": {
-                "rag_response": {
-                    "$ref": "#/definitions/github_com_akolanti_GoAPI_internal_api.RAGResponse"
+                "response": {
+                    "$ref": "#/definitions/github_com_akolanti_GoAPI_internal_api.Response"
                 },
                 "status": {
                     "type": "string"

@@ -35,10 +35,10 @@ func ProcessQuery(ctx context.Context, message string, id string) (res QueryResu
 
 func insertJobIntoJobChannel(args trackJob) (mcpJob trackJob) {
 	service.CreateJob(job.CreateJobParams{
-		ID:       args.JobId,
-		ChatID:   utils.GetNewUUID(),
-		Message:  args.Query,
-		TraceID:  args.Id,
+		ID:        args.JobId,
+		ChatID:    utils.GetNewUUID(),
+		Message:   args.Query,
+		TraceID:   args.Id,
 		IsNewChat: true,
 	})
 	return args
@@ -46,8 +46,9 @@ func insertJobIntoJobChannel(args trackJob) (mcpJob trackJob) {
 
 func pollForAnswers(args trackJob) (mcpJob trackJob) {
 	pollTimes := []int{10, 20, 50, 100, 300, 700, 1000, 2000, 5000, 7000}
+
 	ctx := context.WithValue(context.Background(), config.TRACE_ID_KEY, args.Id)
-	timeoutCtx, cancel := context.WithTimeout(ctx, time.Duration(pollTimes[len(pollTimes)-1])*time.Millisecond)
+	timeoutCtx, cancel := context.WithTimeout(ctx, time.Duration(16000)*time.Millisecond)
 	defer cancel()
 	for _, pollTime := range pollTimes {
 

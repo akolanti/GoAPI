@@ -17,33 +17,32 @@ const (
 	ContentBlockTypeToolResult ContentBlockType = "tool_result"
 )
 
-// ContentBlock is one typed fragment inside a Message.
 type ContentBlock struct {
 	Type ContentBlockType
 
-	// text block
 	Text string
 
-	// tool_use block (assistant requesting a tool call)
+	//tool use
 	ToolCallID string
 	ToolName   string
 	ToolArgs   map[string]any
 
-	// tool_result block (user returning the tool result)
+	//tool result
 	ToolResult string
+
+	//raw fields because gemini needs thought signature bruh
+	RawField any
 }
 
-// Message is a provider-agnostic chat message.
 type Message struct {
 	Role    Role
 	Content []ContentBlock
 }
 
-// Tool describes a callable tool the model may invoke.
 type Tool struct {
 	Name        string
 	Description string
-	InputSchema map[string]any // JSON Schema object
+	InputSchema map[string]any //json schema
 }
 
 type StopReason string
@@ -53,7 +52,6 @@ const (
 	StopReasonToolUse StopReason = "tool_use"
 )
 
-// Response is the model's reply from a ChatWithTools call.
 type Response struct {
 	Content    []ContentBlock
 	StopReason StopReason
@@ -63,5 +61,3 @@ type Provider interface {
 	Generate(ctx context.Context, query string, matches []string, messageHistory []string) (string, error)
 	ChatWithTools(ctx context.Context, messages []Message, tools []Tool) (*Response, error)
 }
-
-

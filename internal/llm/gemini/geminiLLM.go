@@ -25,7 +25,7 @@ var once sync.Once
 func GetGeminiClient(ctx context.Context, modelName string, apikey string) llm.Provider {
 	once.Do(func() {
 		logger = logger_i.NewLogger("llm_gemini")
-		newGeminiClient(ctx, modelName, apikey)
+		newGeminiClient(ctx, apikey, modelName)
 	})
 
 	if geminiClient == nil {
@@ -42,7 +42,7 @@ func newGeminiClient(ctx context.Context, apikey string, modelName string) {
 	}
 	if c != nil {
 		geminiClient = &llmClient{client: c, modelName: modelName, prompt: config.LLMPrompt}
-		logger.Debug("Gemini ", modelName, " client created")
+		logger.Debug("Gemini", modelName, "client created")
 		logger.Info("Gemini client created")
 		go closeClient(ctx, geminiClient)
 	}
@@ -50,6 +50,9 @@ func newGeminiClient(ctx context.Context, apikey string, modelName string) {
 }
 
 func (c *llmClient) Generate(ctx context.Context, userQuery string, matches []string, messageHistory []string) (string, error) {
+	if strings.TrimSpace(userQuery) == "" {
+		return "", fmt.Errorf("empty query")
+	}
 	logger.With("traceId", ctx.Value("traceId"))
 	systemInstruction := &genai.Content{
 		Parts: []*genai.Part{
@@ -72,12 +75,16 @@ func (c *llmClient) Generate(ctx context.Context, userQuery string, matches []st
 		SystemInstruction: systemInstruction,
 	}
 
-	result, _ := c.client.Models.GenerateContent(
+	result, err := c.client.Models.GenerateContent(
 		ctx,
 		c.modelName,
 		genai.Text(userPrompt),
 		contentConfig,
 	)
+	if err != nil {
+		logger.Error("Error generating content:", "error", err)
+		return "", err
+	}
 	return result.Text(), nil
 }
 
@@ -122,18 +129,27 @@ func toGeminiContents(messages []llm.Message) []*genai.Content {
 	for _, msg := range messages {
 		parts := make([]*genai.Part, 0, len(msg.Content))
 		for _, block := range msg.Content {
-			switch block.Type {
-			case llm.ContentBlockTypeText:
-				parts = append(parts, genai.NewPartFromText(block.Text))
-			case llm.ContentBlockTypeToolUse:
-				parts = append(parts, genai.NewPartFromFunctionCall(block.ToolName, block.ToolArgs))
-			case llm.ContentBlockTypeToolResult:
-				parts = append(parts, genai.NewPartFromFunctionResponse(block.ToolName, map[string]any{
-					"result": block.ToolResult,
-				}))
-			}
-		}
+			if block.RawField != nil {
+				//use the raw field for thought signature, else use build it.
+				if raw, ok := block.RawField.(*genai.Part); ok {
+					parts = append(parts, raw)
+					continue
+				}
+			} else {
+				switch block.Type {
+				case llm.ContentBlockTypeText:
+					parts = append(parts, genai.NewPartFromText(block.Text))
+				case llm.ContentBlockTypeToolUse:
+					parts = append(parts, genai.NewPartFromFunctionCall(block.ToolName, block.ToolArgs))
+				case llm.ContentBlockTypeToolResult:
+					parts = append(parts, genai.NewPartFromFunctionResponse(block.ToolName, map[string]any{
+						"result": block.ToolResult,
+					}))
+				}
 
+			}
+
+		}
 		role := genai.RoleUser
 		if msg.Role == llm.RoleAssistant {
 			role = genai.RoleModel
@@ -168,11 +184,13 @@ func fromGeminiResponse(result *genai.GenerateContentResponse) *llm.Response {
 				ToolCallID: callID,
 				ToolName:   part.FunctionCall.Name,
 				ToolArgs:   part.FunctionCall.Args,
+				RawField:   part,
 			})
 		} else if part.Text != "" {
 			blocks = append(blocks, llm.ContentBlock{
-				Type: llm.ContentBlockTypeText,
-				Text: part.Text,
+				Type:     llm.ContentBlockTypeText,
+				Text:     part.Text,
+				RawField: part,
 			})
 		}
 	}

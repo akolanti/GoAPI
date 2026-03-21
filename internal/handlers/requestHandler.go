@@ -23,6 +23,7 @@ var logRH *logger_i.Logger
 var service *job.Service
 
 func InitHandler(jobService *job.Service) {
+	logRH = logger_i.NewLogger("requestHandler")
 	service = jobService
 }
 

@@ -92,7 +92,7 @@ func main() {
 	ragService := rag.NewService(vectorDB, llmProvider, embeddingService)
 
 	handlers.InitHandler(service)
-	mcpImpl.InitMCPHandler(llmProvider, service)
+	mcpImpl.InitMCPHandler(serviceContext, llmProvider, service)
 
 	//init worker pool
 	worker.InitServices(service, ragService)

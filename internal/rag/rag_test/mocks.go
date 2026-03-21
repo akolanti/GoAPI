@@ -7,9 +7,7 @@ import (
 	"github.com/akolanti/GoAPI/internal/llm"
 )
 
-// MockVectorDB implements vectorDB.DataProcessor
 type MockVectorDB struct {
-	// Control fields to simulate different behaviors
 	OnSearch           func(ctx context.Context, vectorVal []float32) ([]string, []string, error)
 	OnGetCachedAnswer  func(ctx context.Context, queryVector []float32) (string, bool, error)
 	OnSaveToCache      func(ctx context.Context, id string, vector []float32, answer string) error
@@ -61,7 +59,6 @@ func (m *MockEmbedder) BatchEmbedding(ctx context.Context, chunks []string, isHu
 	if m.OnBatchEmbedding != nil {
 		return m.OnBatchEmbedding(ctx, chunks, isHuge)
 	}
-	// Return dummy vectors matching chunk size
 	return make([][]float32, len(chunks)), nil
 }
 
@@ -69,7 +66,6 @@ func (m *MockEmbedder) GetEmbedding(ctx context.Context, query string) ([]float3
 	return []float32{0.1}, nil
 }
 
-// MockLLM implements llm.Provider
 type MockLLM struct {
 	OnGenerate func(ctx context.Context, query string, matches []string, history []string) (string, error)
 }
