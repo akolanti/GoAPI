@@ -23,6 +23,11 @@ func InitMCPServer(ctx context.Context, transport *mcp.InMemoryTransport) {
 		Description: "This tool takes a user query and returns a response based on the RAG system. The response includes the answer to the query, the sources used to generate the answer, and the status of the query processing.",
 	}, search_knowledge_base)
 
+	mcp.AddTool(server, &mcp.Tool{
+		Name:        "get_system_message",
+		Description: "Looks up a system message by its code from the external system messages API. Returns the message code, language, and description. Example codes: ATTACHDISP,ABORTWF.",
+	}, get_system_message)
+
 	if err := server.Run(ctx, transport); err != nil {
 		logMCP.With("error", err).Error("Failed to start MCP server")
 	}
@@ -37,10 +42,6 @@ func search_knowledge_base(ctx context.Context, req *mcp.CallToolRequest, in Pro
 	res := ProcessQuery(ctx, in.Query, id)
 	return nil, res, res.Err
 }
-
-// func SystemMessageQuery(ctx context.Context, query string, traceId string) {
-// 	logMCP.With("traceId", traceId).Info("Query a REST System message endpoint")
-// }
 
 type ProcessQueryStruct struct {
 	Query string `json:"Query"`

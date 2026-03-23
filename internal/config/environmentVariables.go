@@ -80,6 +80,9 @@ const (
 	//redis timeouts
 	RedisJobStoreTTL     = 24 * time.Hour
 	RedisMessageStoreTTL = 24 * time.Hour
+
+	//external APIs
+	SystemMessagesAPIBaseURL = ""
 )
 
 const ModelContext = `You are a helpful assistant.

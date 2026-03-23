@@ -2,24 +2,72 @@ package mcpImpl
 
 import (
 	"context"
-	"time"
+	"encoding/json"
+	"fmt"
+	"io"
+	"net/http"
+	"net/url"
+
+	"github.com/akolanti/GoAPI/internal/config"
+	"github.com/modelcontextprotocol/go-sdk/mcp"
 )
 
-//Gah I dont remember the web api parameters for the request
-//TODO
+type SystemMessageInput struct {
+	Code string `json:"code"`
+}
 
-func callOtherAPI(ctx context.Context, query string, traceId string) (string, error) {
-	//SystemMessageQuery(ctx, query, traceId)
-	//simulate calling another API and getting a response
-	time.Sleep(500 * time.Millisecond)
-	return "Response from other API for query: " + query, nil
+type systemMessagesResponse struct {
+	SystemMessages []systemMessage `json:"systemMessages"`
 }
 
 type systemMessage struct {
-	Message string `json:"message"`
-	Code    int    `json:"code"`
+	Code        string `json:"code"`
+	Language    string `json:"language"`
+	Description string `json:"description"`
 }
 
-type systemMessageAPICall struct {
-	Message string `json:"message"`
+type SystemMessageOutput struct {
+	Messages []systemMessage `json:"messages"`
+}
+
+func get_system_message(ctx context.Context, req *mcp.CallToolRequest, in SystemMessageInput) (*mcp.CallToolResult, SystemMessageOutput, error) {
+	logMCP.With("code", in.Code).Info("Calling system messages API")
+
+	messages, err := callSystemMessagesAPI(ctx, in.Code)
+	if err != nil {
+		return nil, SystemMessageOutput{}, err
+	}
+	return nil, SystemMessageOutput{Messages: messages}, nil
+}
+
+func callSystemMessagesAPI(ctx context.Context, code string) ([]systemMessage, error) {
+	reqURL := config.SystemMessagesAPIBaseURL + "/api/v1/staticdata/systemmessages?code=" + url.QueryEscape(code)
+
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, reqURL, nil)
+	if err != nil {
+		return nil, fmt.Errorf("creating request: %w", err)
+	}
+	req.Header.Set("Accept", "application/json")
+
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		return nil, fmt.Errorf("calling system messages API: %w", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("system messages API returned status %d", resp.StatusCode)
+	}
+
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return nil, fmt.Errorf("reading response body: %w", err)
+	}
+
+	var apiResp systemMessagesResponse
+	if err := json.Unmarshal(body, &apiResp); err != nil {
+		return nil, fmt.Errorf("unmarshaling response: %w", err)
+	}
+
+	return apiResp.SystemMessages, nil
 }
