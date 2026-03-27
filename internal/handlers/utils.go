@@ -12,6 +12,7 @@ import (
 	"github.com/akolanti/GoAPI/internal/api"
 	"github.com/akolanti/GoAPI/internal/config"
 	"github.com/akolanti/GoAPI/internal/domain/jobModel"
+	"github.com/akolanti/GoAPI/internal/job"
 )
 
 func writeJsonResponse(w http.ResponseWriter, statusCode int, data interface{}) {
@@ -24,12 +25,12 @@ func writeJsonResponse(w http.ResponseWriter, statusCode int, data interface{}) 
 	}
 }
 
-func validateId(id string, traceId string) (result jobModel.Job, isFound bool) {
+func validateId(id string, context context.Context) (result jobModel.Job, isFound bool) {
 	if id == "" {
 		logRH.Warn("Empty Job ID")
 		return jobModel.Job{}, false
 	}
-	return GetJobStatus(id, traceId)
+	return service.GetJobStatus(id, context)
 }
 
 func validateContext(ctx context.Context) bool {
@@ -83,19 +84,40 @@ func processNewJobData(request *http.Request, w http.ResponseWriter, requestData
 		}
 		message = requestData.Message
 	}
+	id := utils.GetNewUUID()
+	service.CreateJob(job.CreateJobParams{
+		ID:               id,
+		ChatID:           chatID,
+		Message:          message,
+		IsNewChat:        isNewChat,
+		TraceID:          request.Context().Value(config.TRACE_ID_KEY).(string),
+		DocumentName:     docName,
+		DocumentSource:   docPath,
+		IsDocumentIngest: docName != "" && docPath != "",
+		IsMCPCall:        false,
+	})
 
-	newJob := newJobData{
-		id:               utils.GetNewUUID(),
-		chatId:           chatID,
-		message:          message,
-		isNewChat:        isNewChat,
-		traceId:          request.Context().Value(config.TRACE_ID_KEY).(string),
-		documentName:     docName,
-		documentSource:   docPath,
-		isDocumentIngest: !isChatRequest,
-	}
-	CreateNewJob(newJob)
-	res := adapter.ToInitJobResponse(newJob.id)
+	res := adapter.ToInitJobResponse(id)
 	writeJsonResponse(w, http.StatusAccepted, res)
 
 }
+
+func ValidateChatRequest(chatReq api.ChatRequest) bool {
+	return validateMessage(chatReq.Message, chatReq.ChatID)
+}
+
+func ValidateMcpRequest(req api.MCPRequest) bool {
+	return req.Message != ""
+}
+
+func validateMessage(message string, id string) bool {
+
+	if message == "" {
+		return false
+	}
+	if id == "" {
+		return true
+	}
+	return service.MessageStore.ValidateChatId(context.Background(), id)
+}
+

@@ -32,6 +32,7 @@ const (
 
 	JobTypeQuery  JobType = "Query"
 	JobTypeIngest JobType = "Ingest"
+	JobTypeMCP    JobType = "MCP"
 )
 
 type Job struct {
@@ -74,3 +75,4 @@ type MessageStore interface {
 	InitNewChat(ctx context.Context, id string) error
 	GetMessageHistory(ctx context.Context, chatId string) (error, []string)
 }
+

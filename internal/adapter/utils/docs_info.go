@@ -30,3 +30,5 @@ package utils
 //docker-compose up
 
 //docker-compose down
+
+//docker-compose down --remove-orphans

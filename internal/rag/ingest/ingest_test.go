@@ -26,7 +26,9 @@ type mockVectorDB struct {
 	upsertFunc func(ctx context.Context, coll string, chunks []commonModels.DocChunk, vectors [][]float32) error
 }
 
-func (m *mockVectorDB) Search(ctx context.Context, v []float32) ([]string, error) { return nil, nil }
+func (m *mockVectorDB) Search(ctx context.Context, v []float32) ([]string, []string, error) {
+	return nil, nil, nil
+}
 func (m *mockVectorDB) GetCachedAnswer(ctx context.Context, v []float32) (string, bool, error) {
 	return "", false, nil
 }

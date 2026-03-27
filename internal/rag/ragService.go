@@ -8,10 +8,10 @@ import (
 	"github.com/akolanti/GoAPI/internal/adapter/utils"
 	"github.com/akolanti/GoAPI/internal/config"
 	"github.com/akolanti/GoAPI/internal/domain/jobModel"
+	"github.com/akolanti/GoAPI/internal/llm"
 	"github.com/akolanti/GoAPI/internal/metrics"
 	"github.com/akolanti/GoAPI/internal/rag/embedding"
 	"github.com/akolanti/GoAPI/internal/rag/ingest"
-	"github.com/akolanti/GoAPI/internal/rag/llm"
 	"github.com/akolanti/GoAPI/internal/rag/vectorDB"
 	"github.com/akolanti/GoAPI/pkg/logger_i"
 )
@@ -81,10 +81,12 @@ func (s *service) ProcessRequest(ctx context.Context, jobt jobModel.Job, message
 		return s.jobError(jobt, err, "EMBEDDING_FAILURE", true)
 	}
 
+	if jobt.JobType  != jobModel.JobTypeMCP {
 	// Cache Check
-	cachedAnswer, found := s.executeCacheCheckStep(ctx, inMethodLogger, &jobt, embeddingStep)
-	if found {
-		return returnOutput(jobt, cachedAnswer)
+		cachedAnswer, found := s.executeCacheCheckStep(ctx, inMethodLogger, &jobt, embeddingStep)
+		if found {
+			return returnOutput(jobt, cachedAnswer)
+		}
 	}
 
 	// Vector DB Search

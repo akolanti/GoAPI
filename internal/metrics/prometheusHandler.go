@@ -33,7 +33,7 @@ type HttpStatusRecorder struct {
 	Status int
 }
 
-func (r *HttpStatusRecorder) CaptureWriteHeaderMetrics(code int) {
+func (r *HttpStatusRecorder) WriteHeader(code int) {
 	r.Status = code
 	r.ResponseWriter.WriteHeader(code)
 }

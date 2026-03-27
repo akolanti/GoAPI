@@ -4,23 +4,22 @@ import (
 	"context"
 
 	"github.com/akolanti/GoAPI/internal/domain/commonModels"
+	"github.com/akolanti/GoAPI/internal/llm"
 )
 
-// MockVectorDB implements vectorDB.DataProcessor
 type MockVectorDB struct {
-	// Control fields to simulate different behaviors
-	OnSearch           func(ctx context.Context, vectorVal []float32) ([]string, error)
+	OnSearch           func(ctx context.Context, vectorVal []float32) ([]string, []string, error)
 	OnGetCachedAnswer  func(ctx context.Context, queryVector []float32) (string, bool, error)
 	OnSaveToCache      func(ctx context.Context, id string, vector []float32, answer string) error
 	OnCreateCollection func(ctx context.Context, name string) error
 	OnUpsertBatch      func(ctx context.Context, name string, chunks []commonModels.DocChunk, vectors [][]float32) error
 }
 
-func (m *MockVectorDB) Search(ctx context.Context, v []float32) ([]string, error) {
+func (m *MockVectorDB) Search(ctx context.Context, v []float32) ([]string, []string, error) {
 	if m.OnSearch != nil {
 		return m.OnSearch(ctx, v)
 	}
-	return []string{"default context"}, nil
+	return []string{"default context"}, nil, nil
 }
 
 func (m *MockVectorDB) GetCachedAnswer(ctx context.Context, v []float32) (string, bool, error) {
@@ -60,7 +59,6 @@ func (m *MockEmbedder) BatchEmbedding(ctx context.Context, chunks []string, isHu
 	if m.OnBatchEmbedding != nil {
 		return m.OnBatchEmbedding(ctx, chunks, isHuge)
 	}
-	// Return dummy vectors matching chunk size
 	return make([][]float32, len(chunks)), nil
 }
 
@@ -68,7 +66,6 @@ func (m *MockEmbedder) GetEmbedding(ctx context.Context, query string) ([]float3
 	return []float32{0.1}, nil
 }
 
-// MockLLM implements llm.Provider
 type MockLLM struct {
 	OnGenerate func(ctx context.Context, query string, matches []string, history []string) (string, error)
 }
@@ -78,4 +75,11 @@ func (m *MockLLM) Generate(ctx context.Context, q string, mth []string, hist []s
 		return m.OnGenerate(ctx, q, mth, hist)
 	}
 	return "mocked llm response", nil
+}
+
+func (m *MockLLM) ChatWithTools(ctx context.Context, messages []llm.Message, tools []llm.Tool) (*llm.Response, error) {
+	return &llm.Response{
+		Content:    []llm.ContentBlock{{Type: llm.ContentBlockTypeText, Text: "mocked tool response"}},
+		StopReason: llm.StopReasonEndTurn,
+	}, nil
 }

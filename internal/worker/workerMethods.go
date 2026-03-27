@@ -40,7 +40,10 @@ func executeJob(job jobmodel.Job) {
 	}
 
 	job.EndTime = time.Now()
-	saveJobState(ctx, job, jobmodel.JobStatusComplete)
+	if job.Status != jobmodel.JobStatusError {
+		job.Status = jobmodel.JobStatusComplete
+	}
+	saveJobState(ctx, job, job.Status)
 }
 
 func removeWorker(reason string) {

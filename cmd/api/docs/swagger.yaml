@@ -45,7 +45,16 @@ definitions:
       start_time:
         type: string
     type: object
-  github_com_akolanti_GoAPI_internal_api.RAGResponse:
+  github_com_akolanti_GoAPI_internal_api.MCPRequest:
+    properties:
+      message:
+        type: string
+      request_id:
+        type: string
+    required:
+    - message
+    type: object
+  github_com_akolanti_GoAPI_internal_api.Response:
     properties:
       answer:
         type: string
@@ -58,8 +67,8 @@ definitions:
     type: object
   github_com_akolanti_GoAPI_internal_api.Result:
     properties:
-      rag_response:
-        $ref: '#/definitions/github_com_akolanti_GoAPI_internal_api.RAGResponse'
+      response:
+        $ref: '#/definitions/github_com_akolanti_GoAPI_internal_api.Response'
       status:
         type: string
     type: object
@@ -139,6 +148,60 @@ paths:
       summary: Upload a document for ingestion
       tags:
       - Ingestion
+  /mcp:
+    post:
+      consumes:
+      - application/json
+      description: Accepts a question, runs tool-use via MCP and returns a job ID.
+        This is stateless - each request is independent with no conversation history.
+        Use /chat for multi-turn conversations.
+      parameters:
+      - description: Question and optional request ID
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/github_com_akolanti_GoAPI_internal_api.MCPRequest'
+      produces:
+      - application/json
+      responses:
+        "202":
+          description: Job created - poll /mcp/status/{id}
+          schema:
+            $ref: '#/definitions/github_com_akolanti_GoAPI_internal_api.InitJobResponse'
+        "400":
+          description: Invalid request
+          schema:
+            $ref: '#/definitions/github_com_akolanti_GoAPI_internal_api.JobResponse'
+      summary: Submit a stateless MCP query
+      tags:
+      - MCP
+  /mcp/status/{id}:
+    get:
+      consumes:
+      - application/json
+      description: Poll this endpoint to check the status of an MCP query. Returns
+        the final answer when complete.
+      parameters:
+      - description: Job ID from the /mcp response
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Current job status and result if complete
+          schema:
+            $ref: '#/definitions/github_com_akolanti_GoAPI_internal_api.JobResponse'
+        "404":
+          description: Job not found
+          schema:
+            $ref: '#/definitions/github_com_akolanti_GoAPI_internal_api.JobResponse'
+      summary: Get MCP job status
+      tags:
+      - MCP
   /status/{id}:
     get:
       consumes:

@@ -23,15 +23,15 @@ type JobOutgoingError struct {
 	Retry   bool   `json:"can_retry" example:"false"`
 }
 
-type RAGResponse struct {
+type Response struct {
 	Question string   `json:"question"`
 	Answer   string   `json:"answer"`
 	Sources  []string `json:"sources"`
 }
 
 type Result struct {
-	Status              string       `json:"status"`
-	RAGExternalResponse *RAGResponse `json:"rag_response,omitempty"`
+	Status           string    `json:"status"`
+	ExternalResponse *Response `json:"response,omitempty"`
 }
 
 type InitJobResponse struct {
@@ -51,4 +51,8 @@ type JobStatusRequest struct {
 
 type IngestDocumentRequest struct {
 	DocumentName string `json:"document_name" validate:"required"`
+}
+
+type MCPRequest struct {
+	Message string `json:"message" validate:"required"`
 }
