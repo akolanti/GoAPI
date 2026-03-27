@@ -25,7 +25,7 @@ func InitMCPServer(ctx context.Context, transport *mcp.InMemoryTransport) {
 
 	mcp.AddTool(server, &mcp.Tool{
 		Name:        "get_system_message",
-		Description: "Looks up a system message by its code from the external system messages API. Returns the message code, language, and description. Example codes: ATTACHDISP,ABORTWF.",
+		Description: "Looks up a system message by its code from the external system messages API. Returns the message code, language, and description. Example codes but do not use these codes directly, these are just examples (ATTACHDISP,ABORTWF). Use the input from the user query to look up the system message.",
 	}, get_system_message)
 
 	if err := server.Run(ctx, transport); err != nil {

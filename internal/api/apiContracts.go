@@ -54,6 +54,5 @@ type IngestDocumentRequest struct {
 }
 
 type MCPRequest struct {
-	Message   string `json:"message" validate:"required"`
-	RequestId string `json:"request_id,omitempty"`
+	Message string `json:"message" validate:"required"`
 }

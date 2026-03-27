@@ -94,6 +94,7 @@ func processNewJobData(request *http.Request, w http.ResponseWriter, requestData
 		DocumentName:     docName,
 		DocumentSource:   docPath,
 		IsDocumentIngest: docName != "" && docPath != "",
+		IsMCPCall:        false,
 	})
 
 	res := adapter.ToInitJobResponse(id)

@@ -47,9 +47,16 @@ func (s *Service) pushToJobChannel(newJob CreateJobParams) {
 
 	} else {
 		_job.JobType = jobModel.JobTypeQuery
+		_job.Status = jobModel.JobStatusQueued
 		_job.ChatId = newJob.ChatID
 		_job.JobPayload.Question = newJob.Message
 		_job.CurrentStep = jobModel.UserQueryInit
+
+		if newJob.IsMCPCall {
+			_job.JobType = jobModel.JobTypeMCP
+		} else {
+			_job.JobType = jobModel.JobTypeQuery
+		}
 	}
 
 	//metrics

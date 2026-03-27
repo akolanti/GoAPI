@@ -40,6 +40,7 @@ func insertJobIntoJobChannel(args trackJob) (mcpJob trackJob) {
 		Message:   args.Query,
 		TraceID:   args.Id,
 		IsNewChat: true,
+		IsMCPCall: true,
 	})
 	return args
 }

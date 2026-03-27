@@ -81,10 +81,12 @@ func (s *service) ProcessRequest(ctx context.Context, jobt jobModel.Job, message
 		return s.jobError(jobt, err, "EMBEDDING_FAILURE", true)
 	}
 
+	if jobt.JobType  != jobModel.JobTypeMCP {
 	// Cache Check
-	cachedAnswer, found := s.executeCacheCheckStep(ctx, inMethodLogger, &jobt, embeddingStep)
-	if found {
-		return returnOutput(jobt, cachedAnswer)
+		cachedAnswer, found := s.executeCacheCheckStep(ctx, inMethodLogger, &jobt, embeddingStep)
+		if found {
+			return returnOutput(jobt, cachedAnswer)
+		}
 	}
 
 	// Vector DB Search

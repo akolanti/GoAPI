@@ -161,7 +161,7 @@ func PostIngestHandler(w http.ResponseWriter, r *http.Request) {
 // @Tags         MCP
 // @Accept       json
 // @Produce      json
-// @Param        request  body      api.MCPRequest       true  "Question and optional request ID"
+// @Param        request  body      api.MCPRequest       true  "Question"
 // @Success      202      {object}  api.InitJobResponse  "Job created - poll /mcp/status/{id}"
 // @Failure      400      {object}  api.JobResponse      "Invalid request"
 // @Router       /mcp [post]
@@ -176,14 +176,11 @@ func MCPHandler(w http.ResponseWriter, request *http.Request) {
 		}(request.Body)
 		if err := json.NewDecoder(request.Body).Decode(&requestData); err != nil || !ValidateMcpRequest(requestData) {
 			logRH.Warn("Bad mcp Request: ", "error:", err, "request data:", requestData)
-			WriteErrorResponse(w, http.StatusBadRequest, requestData.RequestId, "Bad Request")
+			WriteErrorResponse(w, http.StatusBadRequest, "", "Bad Request")
 			return
 		}
 
-		jobId := requestData.RequestId
-		if jobId == "" {
-			jobId = utils.GetNewUUID()
-		}
+		jobId := utils.GetNewUUID()
 		traceId := request.Context().Value(config.TRACE_ID_KEY).(string)
 
 		mcpImpl.HandleRequest(request.Context(), requestData.Message, jobId, traceId)

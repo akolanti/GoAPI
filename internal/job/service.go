@@ -39,4 +39,5 @@ type CreateJobParams struct {
 	IsDocumentIngest bool
 	DocumentName     string
 	DocumentSource   string
+	IsMCPCall        bool
 }
