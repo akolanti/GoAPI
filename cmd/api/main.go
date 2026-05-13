@@ -24,15 +24,13 @@ import (
 	"syscall"
 
 	"github.com/akolanti/GoAPI/internal/config"
-	"github.com/akolanti/GoAPI/internal/data/store"
 	jobmodel "github.com/akolanti/GoAPI/internal/domain/jobModel"
 	"github.com/akolanti/GoAPI/internal/handlers"
 	"github.com/akolanti/GoAPI/internal/job"
 	llmFactory "github.com/akolanti/GoAPI/internal/llm/factory"
-	"github.com/akolanti/GoAPI/internal/mcpImpl"
 	"github.com/akolanti/GoAPI/internal/rag"
-	"github.com/akolanti/GoAPI/internal/rag/embedding/googleEmbedding"
-	"github.com/akolanti/GoAPI/internal/rag/vectorDB/qdrantDB"
+	embeddingFactory "github.com/akolanti/GoAPI/internal/rag/embedding/factory"
+	vectorDBFactory "github.com/akolanti/GoAPI/internal/rag/vectorDB/factory"
 	"github.com/akolanti/GoAPI/internal/server"
 	"github.com/akolanti/GoAPI/internal/worker"
 	"github.com/akolanti/GoAPI/pkg/logger_i"
@@ -67,20 +65,14 @@ func main() {
 		JobChannel:        jobChannel,
 		RequestCount:      requestCount,
 		DispatcherChannel: dispatcherChannel,
-		JobStore:          store.GetRedisJobStore(serviceContext),
-		MessageStore:      store.GetRedisMessageStore(serviceContext),
 	}
-	logger.Info("Starting job service")
 
-	if serviceConfig.JobStore == nil || serviceConfig.MessageStore == nil {
-		logger.Error("Redis stores are offline")
-		serviceConfig.JobStore = store.InitInMemoryJobStore()
-		serviceConfig.MessageStore = store.InitMessageStore()
-	}
+	serviceConfig.JobStore, serviceConfig.MessageStore = initStores(serviceContext, logger)
+	logger.Info("Starting job service")
 	service := job.InitJobService(serviceConfig)
 
-	vectorDB := qdrantDB.GetQuadrantClient(serviceContext)
-	embeddingService := googleEmbedding.GetGoogleEmbeddingClient(serviceContext, config.GoogleEmbeddingModel, config.GoogleEmbeddingAPIKey)
+	vectorDB := vectorDBFactory.NewVectorDB(serviceContext)
+	embeddingService := embeddingFactory.NewEmbedder(serviceContext)
 	llmProvider := llmFactory.NewProvider(serviceContext)
 
 	if vectorDB == nil || embeddingService == nil || llmProvider == nil {
@@ -92,7 +84,7 @@ func main() {
 	ragService := rag.NewService(vectorDB, llmProvider, embeddingService)
 
 	handlers.InitHandler(service)
-	mcpImpl.InitMCPHandler(serviceContext, llmProvider, service)
+	initOnlineServices(serviceContext, llmProvider, service)
 
 	//init worker pool
 	worker.InitServices(service, ragService)

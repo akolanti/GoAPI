@@ -1,3 +1,5 @@
+//go:build !offline
+
 package store
 
 import (
@@ -17,9 +19,13 @@ type RedisMessageStore struct {
 	logger *logger_i.Logger
 }
 
-func GetRedisMessageStore(ctx context.Context) *RedisMessageStore {
+func GetRedisMessageStore(ctx context.Context) jobModel.MessageStore {
+	redisClient := redisStore.GetRedisStore(ctx, config.RedisMessageStore)
+	if redisClient == nil {
+		return nil
+	}
 	return &RedisMessageStore{
-		store:  redisStore.GetRedisStore(ctx, config.RedisMessageStore),
+		store:  redisClient,
 		logger: logger_i.NewLogger("MessageStore"),
 	}
 }

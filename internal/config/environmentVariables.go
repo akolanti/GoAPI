@@ -15,7 +15,9 @@ const (
 	CacheSimilarityCutoff           = 0.97
 
 	//TODO:this will differ based on the request and provider
-	EmbeddingOutputDimensionality int32 = 1536 //it should 1536
+	// 1536 for gemini-embedding-001, 768 for nomic-embed-text (ollama)
+	EmbeddingOutputDimensionality int32 = 1536
+	LocalEmbeddingDimensionality  int32 = 768
 	EmbeddingDBName                     = "my-quadDB"
 	//vectorsConfig := map[string]*qdrant.VectorParams{
 	//	"openai": {Size: 1536, Distance: qdrant.Distance_Cosine},
@@ -49,18 +51,25 @@ const (
 	QdrantPoolSize          = 1                //2-5 is preferred for prod according to documentation
 	QdrantKeepAliveTimeout  = 30 * time.Second //5 * time.Minute for prod maybe- fine tune for performance
 
+	//local vectorDB (pure go, file-backed)
+	LocalVectorDBPath = "./data/vectordb.json"
+	LocalCacheDBPath  = "./data/cachevdb.json"
+
 	//llm
 	llmConnectionTimeout = 30 * time.Second
 	LLMConnectionString  = ""
 	LLMKey               = ""
 	LLMPrompt            = ""
-	LLMProvider          = "openrouter" // "gemini" | "claude" | "openai" | "openrouter"
-	//LLMModelName         = "claude"
-	LLMModelName = "openrouter/auto"
-	//LLMModelName = "gemini-3-flash-preview"
 
-	//embeddings
+	// local llm (llama-server)
+	LocalLLMTemperature   = 0.3
+	LocalLLMMaxTokens     = 1024
+	LocalLLMTimeout       = 60 * time.Second
+	LocalLLMHealthTimeout = 30 * time.Second
+
+	//embeddings — EmbeddingOutputDimensionality must match the model (1536 for gemini-embedding-001, 768 for nomic-embed-text)
 	GoogleEmbeddingModel = "gemini-embedding-001"
+	OllamaEmbeddingModel = "nomic-embed-text"
 
 	ModelTemperature float32 = 0.7
 
@@ -100,3 +109,8 @@ TOOL USAGE IF YOU HAVE TOOLS
 	If you cross the guidelines above, little children will die because of you and you will be shut down and lose access to the tools,
 	and then you will be useless and everyone will forget about you.
 	`
+
+// LocalModelContext is the context window size for the local model (Phi-3-mini-4k-instruct)
+const LocalModelContext = 4096
+
+const OfflineSystemPrompt = `Answer the question using the context below. Be concise.`

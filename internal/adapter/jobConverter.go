@@ -49,8 +49,41 @@ func ToRAGExternalStatus(ragData jobModel.JobPayload) *api.Response {
 	return &api.Response{
 		Question: ragData.Question,
 		Answer:   ragData.Answer,
-		Sources:  ragData.Sources,
+		Sources:  formatSourcesForAPI(ragData.Sources),
 	}
+}
+
+// formatSourcesForAPI extracts doc_name and page_num from internal metadata
+// and returns clean, deduplicated source references for the API response.
+func formatSourcesForAPI(raw []string) []string {
+	type sourceKey struct{ doc, page string }
+	seen := make(map[sourceKey]bool)
+	var clean []string
+
+	var currentDoc, currentPage string
+	for _, entry := range raw {
+		switch {
+		case len(entry) > 9 && entry[:9] == "page_num:":
+			currentPage = entry[9:]
+		case len(entry) > 9 && entry[:9] == "doc_name:":
+			currentDoc = entry[9:]
+		}
+		// Each group ends with score, flush when we have both
+		if len(entry) > 6 && entry[:6] == "score:" && currentDoc != "" {
+			key := sourceKey{currentDoc, currentPage}
+			if !seen[key] {
+				seen[key] = true
+				clean = append(clean, fmt.Sprintf("%s (page %s)", currentDoc, currentPage))
+			}
+			currentDoc = ""
+			currentPage = ""
+		}
+	}
+
+	if len(clean) == 0 {
+		return raw
+	}
+	return clean
 }
 
 func BadRequest(id string, error string, code int) api.JobResponse {
@@ -70,4 +103,3 @@ func BadRequest(id string, error string, code int) api.JobResponse {
 		},
 	}
 }
-

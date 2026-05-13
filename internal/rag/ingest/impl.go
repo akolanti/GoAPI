@@ -81,7 +81,9 @@ func getDocType(docPath string) commonModels.DocType {
 	switch ext {
 	case ".pdf":
 		return commonModels.PDF
-	case ".docx", ".txt", ".rtf":
+	case ".txt":
+		return commonModels.TXT
+	case ".docx", ".rtf":
 		return commonModels.DOCX
 	default:
 		return commonModels.ERR
@@ -92,7 +94,7 @@ func extractText(url string, contentType commonModels.DocType) ([]rawPage, error
 	switch contentType {
 	case commonModels.PDF:
 		return extractPDF(url)
-	case commonModels.DOCX:
+	case commonModels.TXT, commonModels.DOCX:
 		return extractdocxTxtRtf(url)
 
 	default:
@@ -104,8 +106,13 @@ func PrepareChunks(pages []rawPage, doc commonModels.Document, embeddingModel st
 	var allChunks []commonModels.DocChunk
 
 	// Limits for the splitter
-	const maxChunkSize = 1000 // characters
-	const overlap = 150       // generous overlap helps semantic continuity
+	var maxChunkSize = 1000 // characters
+	var overlap = 150       // generous overlap helps semantic continuity
+
+	if config.OFFLINE_MODE == true {
+		maxChunkSize = 300 // characters
+		overlap = 50
+	}
 
 	for _, page := range pages {
 		// 1. Split the text of this specific page

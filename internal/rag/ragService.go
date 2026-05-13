@@ -70,7 +70,11 @@ func NewService(vector vectorDB.DataProcessor, llm llm.Provider, em embedding.Em
 func (s *service) ProcessRequest(ctx context.Context, jobt jobModel.Job, messageHistory []string) jobModel.Job {
 	inMethodLogger := s.logger.With("traceId", ctx.Value(config.TRACE_ID_KEY).(string), "JobId", jobt.Id)
 
-	processContext, cancel := context.WithTimeout(ctx, 30*time.Second)
+	timeout := 30 * time.Second
+	if config.OFFLINE_MODE {
+		timeout = config.LocalLLMTimeout
+	}
+	processContext, cancel := context.WithTimeout(ctx, timeout)
 	defer cancel()
 
 	jobt.CurrentStep = jobModel.RAGCall

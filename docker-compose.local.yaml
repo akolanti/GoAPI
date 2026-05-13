@@ -1,0 +1,19 @@
+# Offline mode  llama-server runs on the host, API runs in Docker.
+#
+# 1. Start llama-server on the host (port 11434)
+# 2. docker-compose -f docker-compose.local.yaml up --build
+services:
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile.Work
+    ports:
+      - "3000:3000"
+    environment:
+      - OFFLINE_MODE=true
+      - LLM_PROVIDER=local
+      - LLM_MODEL_NAME=Qwen3.5-4B-Q4_K_M
+      - OLLAMA_HOST=host.docker.internal
+      - OLLAMA_PORT=11434
+    extra_hosts:
+      - "host.docker.internal:host-gateway"

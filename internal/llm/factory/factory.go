@@ -1,3 +1,5 @@
+//go:build !offline
+
 package factory
 
 import (
@@ -7,6 +9,8 @@ import (
 	"github.com/akolanti/GoAPI/internal/llm"
 	"github.com/akolanti/GoAPI/internal/llm/claude"
 	"github.com/akolanti/GoAPI/internal/llm/gemini"
+	"github.com/akolanti/GoAPI/internal/llm/local"
+	"github.com/akolanti/GoAPI/internal/llm/ollama"
 	"github.com/akolanti/GoAPI/internal/llm/openRouter"
 	"github.com/akolanti/GoAPI/internal/llm/openaiModels"
 )
@@ -21,6 +25,10 @@ func NewProvider(ctx context.Context) llm.Provider {
 		return openaiModels.GetOpenAIClient(ctx, config.LLMModelName, config.LLMAPIKey)
 	case "openrouter":
 		return openRouter.GetOpenRouterClient(ctx, config.LLMModelName, config.LLMAPIKey)
+	case "ollama":
+		return ollama.GetOllamaClient(ctx, config.LLMModelName, config.OllamaAPIKey)
+	case "local":
+		return local.GetLocalClient(ctx, config.LLMModelName)
 	default:
 		return nil
 	}

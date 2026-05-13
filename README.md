@@ -1,4 +1,4 @@
-# GoAPI — Async RAG Chat & MCP API
+# GoAPI :  Async RAG Chat & MCP API
 
 A Go REST API for RAG chat, document ingestion, and MCP tool use.
 Clients submit jobs and poll for results via an async worker pool.
@@ -11,10 +11,10 @@ Go was chosen for cross-platform support (Linux, Windows, mobile), its standard 
 
 The architecture avoids vendor lock in. 
 Embedders, LLM providers, and vector DBs are all behind opaque interfaces and can be swapped with a config change. 
-LLM support includes Gemini, Claude, OpenAI, and OpenRouter.
+LLM support includes Gemini, Claude, OpenAI, OpenRouter, and Ollama (local).
 New LLM Providers, Embedders and Vector DB's just need implement and interface and the whole system works without any interruptions.
 
-An offline mode is in progress: sqlite-vec for vectors, Ollama for LLM/embeddings, and an in-memory store to replace Redis.
+A local mode using Ollama is supported: set `LLM_PROVIDER=ollama` to use a local LLM and local embeddings via Ollama's OpenAI-compatible API. MCP endpoints are automatically disabled in local mode. A full offline mode (sqlite-vec for vectors, in-memory store to replace Redis) is planned.
 
 ## How It Works
 
@@ -48,8 +48,8 @@ POST /chat → Job queued → Worker picks it up → RAG pipeline → Poll GET /
 
 **Worker Pool:** Starts with 1 worker, auto-scales up to 10 based on queue depth, idle workers retire after 1 minute.
 
-**MCP Integration:** A separate `/mcp` endpoint runs an agentic tool-use loop 
-Then LLM decides which tools to call via MCP protocol, using in-memory transport. Tools include `search_knowledge_base` (RAG queries) and external API integrations. New tools can be added by registering them in `mcpServer.go`.
+**MCP Integration:** A separate `/mcp` endpoint runs a stateless agentic tool-use loop. 
+The LLM decides which tools to call via MCP protocol, using in-memory transport. Tools include `search_knowledge_base` (RAG queries) and `get_system_message` (external system message lookup). New tools can be added by registering them in `mcpServer.go`.
 
 ## Endpoints
 
@@ -71,16 +71,17 @@ Swappable via `LLM_PROVIDER` env var:
 - `gemini` , Google Gemini
 - `claude` , Anthropic Claude
 - `openai` , OpenAI
+- `ollama` , Ollama / llama.cpp (local)
 
-All providers implement the same `llm.Provider` interface.
+All providers implement the same `llm.Provider` interface, which exposes `Generate` (simple RAG queries) and `ChatWithTools` (MCP tool-use loop).
 
 ## Pluggable Components
 
 The RAG pipeline uses opaque interfaces (public interface, private implementation) for its core dependencies. You can swap any of these without touching the rest of the codebase:
 
-- **Embedder** , currently Google Embedding API, but any implementation of the `Embedder` interface works (OpenAI, Cohere, local models, etc.)
+- **Embedder** , Google Embedding API by default, Ollama embeddings in local mode. Selected automatically via an embedding factory based on `LLM_PROVIDER`. Any implementation of the `Embedder` interface works (OpenAI, Cohere, local models, etc.)
 - **Vector DB** , currently Qdrant, but any implementation of the `DataProcessor` interface works (Pinecone, Weaviate, Milvus, pgvector, etc.)
-- **LLM Provider** , currently supports Gemini/Claude/OpenAI/OpenRouter via the `Provider` interface
+- **LLM Provider** , currently supports Gemini/Claude/OpenAI/OpenRouter/Ollama via the `Provider` interface
 - **Data Stores** , Redis by default with automatic in-memory fallback, both implement the same `JobStore` and `MessageStore` interfaces
 
 Each component is injected at startup via constructor. To add a new vector DB, for example, just implement the interface and pass it into `NewService()`.
@@ -100,6 +101,7 @@ internal/
   llm/claude/                # Claude implementation
   llm/openaiModels/          # OpenAI implementation
   llm/openRouter/            # OpenRouter implementation
+  llm/ollama/                # Ollama / local LLM implementation
   mcpImpl/                   # MCP server, client, and tool-use loop
   data/store/                # Redis & in-memory job/message stores
   middleware/                # Auth, rate limiting, tracing
@@ -126,6 +128,20 @@ This starts:
 - **Redis** on `:6379`
 - **Qdrant** on `:6333` (HTTP) / `:6334` (gRPC)
 
+A `Dockerfile.Work` is also provided for workplace-specific builds.
+
+### Local Mode (Ollama)
+
+To run with a local LLM and local embeddings via Ollama:
+
+```bash
+docker-compose -f docker-compose.yaml -f docker-compose.local.yaml up --build
+```
+
+This adds an **Ollama** container on `:11434`. The API uses Ollama for both LLM inference and embeddings. MCP endpoints are disabled in this mode.
+
+**Note:** Set `EmbeddingOutputDimensionality` in config to match your Ollama embedding model (e.g. 768 for `nomic-embed-text`).
+
 ### Environment Variables
 
 | Variable | Default | Description |
@@ -135,6 +151,8 @@ This starts:
 | `REDIS_ADDR` | `127.0.0.1:6379` | Redis address |
 | `QDRANT_HOST` | `localhost` | Qdrant host |
 | `QDRANT_PORT` | `6334` | Qdrant gRPC port |
+| `OLLAMA_HOST` | `localhost` | Ollama host (used in local mode) |
+| `SYSTEM_MESSAGES_API_BASE_URL` | `` | Base URL for external system messages API (used by MCP tool) |
 
 ## Testing
 
